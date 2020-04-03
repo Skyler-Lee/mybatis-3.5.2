@@ -117,6 +117,7 @@ public class MapperAnnotationBuilder {
   }
 
   public MapperAnnotationBuilder(Configuration configuration, Class<?> type) {
+    //拿到mapper的路径，如：com/mybatis/mapper/IUserMapper.java
     String resource = type.getName().replace('.', '/') + ".java (best guess)";
     this.assistant = new MapperBuilderAssistant(configuration, resource);
     this.configuration = configuration;
@@ -124,18 +125,29 @@ public class MapperAnnotationBuilder {
   }
 
   public void parse() {
+    //mapper接口的全限定名，如：com.mybatis.mapper.IUserMapper
     String resource = type.toString();
+    //如果mapper还没有被添加到 loadedResources 这个set集合中
     if (!configuration.isResourceLoaded(resource)) {
+      //加载 mapper.xml 配置文件
       loadXmlResource();
+      //将mapper添加到 loadedResources 这个set集合中
       configuration.addLoadedResource(resource);
+      //设置命名空间为mapper接口的全限定名
       assistant.setCurrentNamespace(type.getName());
+      //如果mapper被@CacheNamespace注解，则进行处理
       parseCache();
+      //如果mapper被@CacheNamespaceRef注解，则进行处理
       parseCacheRef();
+      //获取mapper接口中的方法
       Method[] methods = type.getMethods();
       for (Method method : methods) {
         try {
           // issue #237
           if (!method.isBridge()) {
+            /**
+             * 重要！！！对方法进行解析
+             */
             parseStatement(method);
           }
         } catch (IncompleteElementException e) {
@@ -165,9 +177,12 @@ public class MapperAnnotationBuilder {
     // Spring may not know the real resource name so we check a flag
     // to prevent loading again a resource twice
     // this flag is set at XMLMapperBuilder#bindMapperForNamespace
+    //如果mapper还没有被添加到 loadedResources 这个set集合中
     if (!configuration.isResourceLoaded("namespace:" + type.getName())) {
+      //获取mapper接口对应的mapper.xml文件路径
       String xmlResource = type.getName().replace('.', '/') + ".xml";
       // #1347
+      //获取mapper接口对应的mapper.xml文件
       InputStream inputStream = type.getResourceAsStream("/" + xmlResource);
       if (inputStream == null) {
         // Search XML mapper that is not in the module but in the classpath.
@@ -177,8 +192,11 @@ public class MapperAnnotationBuilder {
           // ignore, resource is not required
         }
       }
+      //如果能够获取到mapper.xml
       if (inputStream != null) {
+        //实例化一个xml解析器
         XMLMapperBuilder xmlParser = new XMLMapperBuilder(inputStream, assistant.getConfiguration(), xmlResource, configuration.getSqlFragments(), type.getName());
+        //对mapper.xml进行解析
         xmlParser.parse();
       }
     }
@@ -297,24 +315,36 @@ public class MapperAnnotationBuilder {
   }
 
   void parseStatement(Method method) {
+    //获取方法参数列表的类型
     Class<?> parameterTypeClass = getParameterType(method);
     LanguageDriver languageDriver = getLanguageDriver(method);
+    //！！！获取方法对应的 sql 信息
     SqlSource sqlSource = getSqlSourceFromAnnotations(method, parameterTypeClass, languageDriver);
+    //如果获取到的 sql 信息不为空
     if (sqlSource != null) {
+      //如果方法被@Options注解，获取注解信息
       Options options = method.getAnnotation(Options.class);
+      //mappedStatementId
       final String mappedStatementId = type.getName() + "." + method.getName();
       Integer fetchSize = null;
       Integer timeout = null;
+      //Statement类型为prepared（这里应该是设置具有预编译功能的PreparedStatement）
       StatementType statementType = StatementType.PREPARED;
+      //通过 configuration 获取默认的 ResultSet 类型
       ResultSetType resultSetType = configuration.getDefaultResultSetType();
+      //获取sql类型：select、update、insert、delete
       SqlCommandType sqlCommandType = getSqlCommandType(method);
+      //sql是不是select类型
       boolean isSelect = sqlCommandType == SqlCommandType.SELECT;
+      //如果sql是select类型，设置不刷新缓存，否则刷新缓存
       boolean flushCache = !isSelect;
+      //如果是select类型，则使用缓存，否则不使用
       boolean useCache = isSelect;
 
       KeyGenerator keyGenerator;
       String keyProperty = null;
       String keyColumn = null;
+      //如果sql类型是insert或者update
       if (SqlCommandType.INSERT.equals(sqlCommandType) || SqlCommandType.UPDATE.equals(sqlCommandType)) {
         // first check for SelectKey annotation - that overrides everything else
         SelectKey selectKey = method.getAnnotation(SelectKey.class);
@@ -347,6 +377,7 @@ public class MapperAnnotationBuilder {
         }
       }
 
+      //解析resultMap
       String resultMapId = null;
       ResultMap resultMapAnnotation = method.getAnnotation(ResultMap.class);
       if (resultMapAnnotation != null) {

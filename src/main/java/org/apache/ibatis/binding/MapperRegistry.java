@@ -58,20 +58,34 @@ public class MapperRegistry {
   }
 
   public <T> void addMapper(Class<T> type) {
+    //type：mapper的类型，如果是一个接口
     if (type.isInterface()) {
+      //如果mapper已经被添加到了 knownMappers 这个map，说明已经被MapperRegistry处理过
       if (hasMapper(type)) {
         throw new BindingException("Type " + type + " is already known to the MapperRegistry.");
       }
+      //是否已经被完全加载
       boolean loadCompleted = false;
       try {
+        //将mapper的类型作为key放入 knownMappers 这个map中，值为一个MapperProxyFactory
         knownMappers.put(type, new MapperProxyFactory<>(type));
         // It's important that the type is added before the parser is run
         // otherwise the binding may automatically be attempted by the
         // mapper parser. If the type is already known, it won't try.
+        /**
+         * 实例化一个 MapperAnnotationBuilder，可以理解为是对mapper信息的封装
+         * 实例化过程中首先初始化了两个静态的map：SQL_ANNOTATION_TYPES和SQL_PROVIDER_ANNOTATION_TYPES
+         * 然后实例化一个 MapperBuilderAssistant，并设置configuration和type
+         */
         MapperAnnotationBuilder parser = new MapperAnnotationBuilder(config, type);
+        /**
+         * ！！！重要，开始进行mapper接口的解析
+         */
         parser.parse();
+        //将加载完成的标志设置为true
         loadCompleted = true;
       } finally {
+        //如果解析的过程中发生异常，则将mapper从knownMappers这个map中移除
         if (!loadCompleted) {
           knownMappers.remove(type);
         }
