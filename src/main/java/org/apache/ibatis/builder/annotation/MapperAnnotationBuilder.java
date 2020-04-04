@@ -196,7 +196,9 @@ public class MapperAnnotationBuilder {
       if (inputStream != null) {
         //实例化一个xml解析器
         XMLMapperBuilder xmlParser = new XMLMapperBuilder(inputStream, assistant.getConfiguration(), xmlResource, configuration.getSqlFragments(), type.getName());
-        //对mapper.xml进行解析
+        /**
+         * 对 mapper.xml进行解析
+         */
         xmlParser.parse();
       }
     }
@@ -498,15 +500,24 @@ public class MapperAnnotationBuilder {
 
   private SqlSource getSqlSourceFromAnnotations(Method method, Class<?> parameterType, LanguageDriver languageDriver) {
     try {
+      //获取方法上注解的sql类型，通过遍历前面初始化的SQL_ANNOTATION_TYPES这个静态的set去匹配
       Class<? extends Annotation> sqlAnnotationType = getSqlAnnotationType(method);
+      //获取方法上注解的sql类型，通过遍历前面初始化的SQL_PROVIDER_ANNOTATION_TYPES这个静态的set去匹配
       Class<? extends Annotation> sqlProviderAnnotationType = getSqlProviderAnnotationType(method);
+
+      //如果是sql类型
       if (sqlAnnotationType != null) {
+        //@Select和@SelectProvider不能同时使用
         if (sqlProviderAnnotationType != null) {
           throw new BindingException("You cannot supply both a static SQL and SqlProvider to method named " + method.getName());
         }
+        //获取方法上的注解信息
         Annotation sqlAnnotation = method.getAnnotation(sqlAnnotationType);
+        //获取注解的值，这个值是一个字符串数组
         final String[] strings = (String[]) sqlAnnotation.getClass().getMethod("value").invoke(sqlAnnotation);
+        //通过获取的字符串数组去构建sql，并返回sql
         return buildSqlSourceFromStrings(strings, parameterType, languageDriver);
+        //如果是sqlProvider类型
       } else if (sqlProviderAnnotationType != null) {
         Annotation sqlProviderAnnotation = method.getAnnotation(sqlProviderAnnotationType);
         return new ProviderSqlSource(assistant.getConfiguration(), sqlProviderAnnotation, type, method);

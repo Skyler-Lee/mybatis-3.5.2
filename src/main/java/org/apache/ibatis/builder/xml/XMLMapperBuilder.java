@@ -90,12 +90,16 @@ public class XMLMapperBuilder extends BaseBuilder {
   }
 
   public void parse() {
+    //如果mapper还没有被添加到 loadedResources 这个set集合中
     if (!configuration.isResourceLoaded(resource)) {
       configurationElement(parser.evalNode("/mapper"));
+      //将mapper添加到 loadedResources 这个set集合中
       configuration.addLoadedResource(resource);
+      //获取xml中的namespace并设置命名空间
       bindMapperForNamespace();
     }
 
+    //解析 resultMap
     parsePendingResultMaps();
     parsePendingCacheRefs();
     parsePendingStatements();
