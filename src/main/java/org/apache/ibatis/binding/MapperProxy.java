@@ -42,18 +42,25 @@ public class MapperProxy<T> implements InvocationHandler, Serializable {
     this.methodCache = methodCache;
   }
 
+  /**
+   * 执行mapper中的方法，实际上执行的就是该代理类中的 invoke()方法
+   */
   @Override
   public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
     try {
+      //如果声明该方法的类是 Object
       if (Object.class.equals(method.getDeclaringClass())) {
         return method.invoke(this, args);
+      //如果该方法是一个default方法
       } else if (method.isDefault()) {
         return invokeDefaultMethod(proxy, method, args);
       }
     } catch (Throwable t) {
       throw ExceptionUtil.unwrapThrowable(t);
     }
+    //从 methodCache 获取该method方法对应的 MapperMethod
     final MapperMethod mapperMethod = cachedMapperMethod(method);
+    //执行方法
     return mapperMethod.execute(sqlSession, args);
   }
 

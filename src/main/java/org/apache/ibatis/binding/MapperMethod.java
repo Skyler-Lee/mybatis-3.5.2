@@ -56,9 +56,12 @@ public class MapperMethod {
 
   public Object execute(SqlSession sqlSession, Object[] args) {
     Object result;
+    //判断sql的类型（select、insert、update、delete）
     switch (command.getType()) {
       case INSERT: {
+        //将方法参数填充到 sql 中
         Object param = method.convertArgsToSqlCommandParam(args);
+        //通过 sqlSession 执行sql
         result = rowCountResult(sqlSession.insert(command.getName(), param));
         break;
       }
@@ -76,8 +79,10 @@ public class MapperMethod {
         if (method.returnsVoid() && method.hasResultHandler()) {
           executeWithResultHandler(sqlSession, args);
           result = null;
+        //如果返回一个多条记录
         } else if (method.returnsMany()) {
           result = executeForMany(sqlSession, args);
+        //如果返回Map
         } else if (method.returnsMap()) {
           result = executeForMap(sqlSession, args);
         } else if (method.returnsCursor()) {

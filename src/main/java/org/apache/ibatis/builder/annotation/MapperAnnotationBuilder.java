@@ -388,6 +388,7 @@ public class MapperAnnotationBuilder {
         resultMapId = parseResultMap(method);
       }
 
+      //将解析后的信息存储到 mappedStatements 这个map中
       assistant.addMappedStatement(
           mappedStatementId,
           sqlSource,
